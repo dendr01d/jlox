@@ -84,6 +84,10 @@ class Scanner {
 					// if it IS a comment, consume the rest of the line
 					while (peek() != '\n' && !isAtEnd()) { advance(); }
 				}
+				else if (match('*')) {
+					// if it's a block comment, call a method to deal with it
+					blockComment();
+				}
 				else {
 					addToken(SLASH);
 				}
@@ -118,6 +122,39 @@ class Scanner {
 		}
 	
 	}
+
+	// parsing block comments
+	// I decided to allow nesting, but this means you MUST close them
+	private void blockComment() {
+		// munch characters, mostly ignoring them
+		while (!isAtEnd()) {
+			char c = advance();
+			switch (c) {
+				case '\n':
+					line++;
+					break;
+
+				// check if the block is being closed
+				case '*':
+					if (match('/')) { return; }
+					break; // ?
+
+				// check if a new block is being opened
+				// if so, recurse to handle it
+				case '/':
+					if (match('*')) { blockComment(); }
+					break;
+			}
+		}
+		// if we've made it out of that while loop without returning
+		// then we must have reached the end of the file without all of
+		// our blocks closing
+		// which I'm arbitrarily deciding is a syntax error
+
+		Lox.error(line, "Unterminated block comment.");
+		return;
+	}
+
 
 	// strings are complicated
 	// enough so to stick their logic in a separate function
